@@ -1,4 +1,4 @@
-from bus.decorators import injectable
+from turbobus.decorators import injectable
 from log.axioma.log import ILogger
 
 

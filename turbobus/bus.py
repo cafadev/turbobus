@@ -26,7 +26,7 @@ class CommandBus:
         Handler = cmd.__handler__
 
         if Handler is None:
-            from bus.exception import CommandHandlerDoesNotExistException
+            from turbobus.exception import CommandHandlerDoesNotExistException
             raise CommandHandlerDoesNotExistException()
 
         result = Handler(**providers).execute(cmd)

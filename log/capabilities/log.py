@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from bus.decorators import command, injectable, injecting
+from turbobus.decorators import command, injectable, injecting
 from ..axioma.log import ILogger, LogCommand
 
 

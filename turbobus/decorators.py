@@ -28,8 +28,6 @@ def injectable(to: type):
 def injecting(cls: type[T]) -> T:
     Provider = providers.get(cls.__name__)
 
-    print(providers)
-
     assert Provider is not None
 
     return Provider()

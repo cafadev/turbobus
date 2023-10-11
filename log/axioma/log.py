@@ -2,8 +2,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import TypeAlias
 
-from bus.bus import Command, CommandHandler
-from bus.decorators import command
+from turbobus.bus import Command, CommandHandler
+from turbobus.decorators import command
 
 
 LogHandlerType: TypeAlias = "ILogHandler"
