@@ -6,7 +6,7 @@ TurboBus is an opinionated implementation of Command Responsibility Segregation 
 Let's see an example using python typings. You can omit all the typing stuffs if you want to.
 
 **God Mode ⚡**
-```python
+```python3
 from  dataclasses  import  dataclass
 from  typing  import  TypeAlias
 
@@ -40,7 +40,7 @@ if __name__ == '__main__':
 ```
 
 **Human Mode 🥱**
-```python
+```python3
 from  dataclasses  import  dataclass
 
 from  turbobus.bus  import  Command, CommandHandler
@@ -74,7 +74,7 @@ In many cases we're going to need to inject dependencies to our command handler.
 
 With the injectable decorator we can specify a class that is implementing the functionalities of the dependency. For example:
 
-```python
+```python3
 from turbobus.decorators import injectable
 from log.axioma.log import ILogger
 
