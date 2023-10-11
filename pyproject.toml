@@ -12,6 +12,7 @@ python = "^3.11"
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.2"
 matic-release = {git = "https://github.com/fancy-crud/matic-release.git"}
+twine = "^4.0.2"
 
 [build-system]
 requires = ["poetry-core"]
