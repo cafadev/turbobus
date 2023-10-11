@@ -1,11 +1,11 @@
 from dataclasses import dataclass
-from turbobus.decorators import command, injectable, injecting
-from ..axioma.log import ILogger, LogCommand
+from turbobus.decorators import command, injecting
+from ..axioma.log import ILogHandler, ILogger, LogCommand
 
 
 @command(LogCommand)
 @dataclass(kw_only=True)
-class LogHandler:
+class LogHandler(ILogHandler):
 
     dependency = injecting(ILogger)
 

@@ -1,0 +1,80 @@
+name: Prerelease
+
+on:
+  push:
+    branches: [alpha, beta, next]
+
+jobs:
+
+  compute-new-tag-version:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    outputs:
+      fromTag: ${{ steps.fromTag.outputs.tag }}
+      toTag: ${{ steps.toTag.outputs.tag }}
+    steps:
+      - name: checkout code repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+
+      - name: 'Get Previous tag'
+        id: fromTag
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
+
+      - name: Installing python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Installing poetry
+        uses: abatilo/actions-poetry@v2
+        with:
+          poetry-version: '1.6.1'
+
+      - name: Install deps
+        run: poetry install
+
+      - name: Run matic-release
+        run: poetry run python scripts/release.py --ci
+
+      - name: Publish tag
+        run: git push --tags
+
+      - name: 'Get lastest tag'
+        id: toTag
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
+
+  generate-release:
+    runs-on: ubuntu-latest
+    needs:
+      - compute-new-tag-version
+    if: ${{ needs.compute-new-tag-version.outputs.fromTag != needs.compute-new-tag-version.outputs.toTag }}
+    steps:
+      - name: checkout code repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up git-cliff
+        uses: kenji-miyake/setup-git-cliff@v1
+
+      - name: Run git-cliff
+        run: |
+          {
+            echo 'CHANGELOG<<EOF'
+            git cliff --latest
+            echo EOF
+          } >> "$GITHUB_ENV"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body: ${{ env.CHANGELOG }}
+          prerelease: true
+          tag_name: ${{ needs.compute-new-tag-version.outputs.toTag }}

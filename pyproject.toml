@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "turbobus"
+version = "1.0.0-alpha.0"
+description = "TurboBus is an opinionated implementation of Command Responsibility Segregation pattern in python"
+authors = ["Christopher A. Flores <christopher.flores@codexitos.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.2"
+matic-release = {git = "https://github.com/fancy-crud/matic-release.git"}
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
