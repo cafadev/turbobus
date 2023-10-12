@@ -10,8 +10,8 @@ Let's see an example using python typings. You can omit all the typing stuffs if
 from  dataclasses  import  dataclass
 from  typing  import  TypeAlias
 
-from  turbobus.bus  import  Command, CommandHandler, CommandBus
-from  turbobus.decorators  import  command, injectable
+from  turbobus.command  import  Command, CommandHandler, CommandBus, handler_of
+from  turbobus.injection  import  injectable
 
 LogHandlerType: TypeAlias  =  "ILogHandler"
 
@@ -20,11 +20,11 @@ class  LogCommand(Command[LogHandlerType]):
 	content: str  
 
 
-class  ILogHandler(CommandHandler[str]):
+class  ILogHandler(CommandHandler[LogCommand, str]):
 	...
 
 
-@command(LogCommand)
+@handler_of(LogCommand)
 class  LogHandler(ILogHandler):
 	def  execute(self, cmd: LogCommand) -> str:
 		return  cmd.content
@@ -43,8 +43,8 @@ if __name__ == '__main__':
 ```python3
 from  dataclasses  import  dataclass
 
-from  turbobus.bus  import  Command, CommandHandler
-from  turbobus.decorators  import  command, injectable
+from  turbobus.command  import  Command, CommandHandler, handler_of
+from  turbobus.decorators  import injectable
 
 @dataclass
 class  LogCommand(Command):
@@ -54,7 +54,7 @@ class  LogCommand(Command):
 class  ILogHandler(CommandHandler):
 	...
 
-@command(LogCommand)
+@handler_of(LogCommand)
 class  LogHandler(ILogHandler):
 	def  execute(self, cmd: LogCommand) -> str:
 		return  cmd.content
@@ -70,12 +70,12 @@ if __name__ == '__main__':
 ```
 
 ## Dependency injection
-In many cases we're going to need to inject dependencies to our command handler. To accomplish that we have two important tools: `@injectable` decorator and `injecting` function. 
+In many cases we're going to need to inject dependencies to our command handler. To accomplish that we have two important tools: `@injectable_of` decorator and `inject` function. 
 
-With the injectable decorator we can specify a class that is implementing the functionalities of the dependency. For example:
+With the `@injectable_of` decorator we can specify a class that is implementing the functionalities of the dependency. For example:
 
 ```python3
-from turbobus.decorators import injectable
+from turbobus.injection import injectable_of, inject
 from log.axioma.log import ILogger
 
 
@@ -86,27 +86,25 @@ class ILogger(ABC):
         ...
 
 
-@injectable(ILogger)
+@injectable_of(ILogger)
 class Logger:
 
     def logger(self, text: str) -> None:
-        print('from logger', text)
+        print(text)
 
 
 @command(LogCommand)
 @dataclass(kw_only=True)
 class LogHandler(ILogHandler):
 
-    logger = injecting(ILogger)
+    logger = inject(ILogger)
 
     def execute(self, cmd: LogCommand) -> str:
-        if self.logger is not None:
-            self.logger.logger(cmd.content)
-
+		self.logger.logger(cmd.content)
         return cmd.content
 
 ```
 
-As you can see in the example above, we're defining an abstract class with the logger method. Then we're doing the implementation of the `ILogger` and we're indicating that in the `@injectable(ILogger)`. 
+As you can see in the example above, we're defining an abstract class with the logger method. Then we're doing the implementation of the `ILogger` and we're indicating that in the `@injectable_of(ILogger)`. 
 
-Then, using the `injecting` function, TurboBus is going to map that dependency and inject the instance in the attribute.
+Then, using the `inject` function, TurboBus is going to map that dependency and inject the instance in the attribute.
