@@ -13,6 +13,7 @@ python = "^3.11"
 pytest = "^7.4.2"
 matic-release = {git = "https://github.com/fancy-crud/matic-release.git"}
 twine = "^4.0.2"
+build = "^1.0.3"
 
 [build-system]
 requires = ["poetry-core"]

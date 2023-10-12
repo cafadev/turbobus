@@ -6,7 +6,7 @@ on:
 
 jobs:
 
-  compute-new-tag-version:
+  build:
     timeout-minutes: 15
     runs-on: ubuntu-latest
     outputs:
@@ -40,6 +40,15 @@ jobs:
       - name: Install deps
         run: poetry install
 
+      - name: Build a binary wheel and a source tarball
+        run: python3 -m build
+
+      - name: Store the distribution packages
+        uses: actions/upload-artifact@v3
+        with:
+          name: python-package-distributions
+          path: dist/
+
       - name: Run matic-release
         run: poetry run python scripts/release.py --ci
 
@@ -50,11 +59,29 @@ jobs:
         id: toTag
         uses: "WyriHaximus/github-action-get-previous-tag@v1"
 
+  pypi-publish:
+    name: Upload release to PyPI
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/turbobus
+    permissions:
+      id-token: write
+    steps:
+      - name: Download all the dists
+        uses: actions/download-artifact@v3
+        with:
+          name: python-package-distributions
+          path: dist/
+
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
   generate-release:
     runs-on: ubuntu-latest
     needs:
-      - compute-new-tag-version
-    if: ${{ needs.compute-new-tag-version.outputs.fromTag != needs.compute-new-tag-version.outputs.toTag }}
+      - build
+    if: ${{ needs.build.outputs.fromTag != needs.build.outputs.toTag }}
     steps:
       - name: checkout code repository
         uses: actions/checkout@v3
@@ -77,4 +104,4 @@ jobs:
         with:
           body: ${{ env.CHANGELOG }}
           prerelease: true
-          tag_name: ${{ needs.compute-new-tag-version.outputs.toTag }}
+          tag_name: ${{ needs.build.outputs.toTag }}
