@@ -2,8 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import TypeAlias
 
-from turbobus.bus import Command, CommandHandler
-from turbobus.decorators import command
+from turbobus.command import Command, CommandHandler
 
 
 LogHandlerType: TypeAlias = "ILogHandler"
@@ -13,7 +12,7 @@ class LogCommand(Command[LogHandlerType]):
 
     content: str
 
-class ILogHandler(CommandHandler[str]):
+class ILogHandler(CommandHandler[LogCommand, str]):
 
     ...
 
