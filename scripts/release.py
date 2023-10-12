@@ -1,9 +1,16 @@
+import json
 import sys
 from matic_release.axioma.version import Version
 from matic_release.capabilities.commit_analyzer import CommitAnalyzer
 from matic_release.capabilities.compute_tag import ComputeTag
 from matic_release.capabilities.publish_tag import PublishTag
 from matic_release.integration.git import GitService
+
+
+def output_file(version: str):
+  with open('./turbobus/version_output.json', 'w') as f:
+    json.dump({ "version": version }, f)
+    f.close()
 
 
 args = sys.argv[1:]
@@ -23,4 +30,8 @@ if '--ci' in args:
   publish = PublishTag(git)
   publish.execute(version)
 
+
+output_file(version.future_tag.value)
+
 print(version.future_tag.value)
+

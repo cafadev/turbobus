@@ -1,29 +1,25 @@
-import sys
+import json
 from setuptools import setup
 readme = open("./README.md", "r")
 
-from matic_release.axioma.version import Version
-from matic_release.capabilities.commit_analyzer import CommitAnalyzer
-from matic_release.capabilities.compute_tag import ComputeTag
-from matic_release.capabilities.publish_tag import PublishTag
-from matic_release.integration.git import GitService
 
-git = GitService()
+json_data = {}
 
-latest_tag = git.get_latest_tag()
+with open('./turbobus/version_output.json') as f:
+    json_data = json.load(f)
 
-version = Version(latest_tag)
+    
+version = json_data.get('version')
 
-commit_analyzer = CommitAnalyzer()
-compute_tag = ComputeTag(git, commit_analyzer)
+print(version)
 
-compute_tag.execute(version)
-
+if version is None:
+    raise Exception('Unprocessable without version')
 
 setup(
     name='turbobus',
     packages=['turbobus'],
-    version=version.future_tag.value,
+    version=version,
     description='TurboBus is an opinionated implementation of Command Responsibility Segregation pattern in python.',
     long_description=readme.read(),
     long_description_content_type='text/markdown',
@@ -31,7 +27,7 @@ setup(
     author_email='cafadev@outlook.com',
 
     url='https://github.com/cafadev/turbobus',
-    download_url=f'https://github.com/cafadev/turbobus/releases/tag/v{version.future_tag.value}',
+    download_url=f'https://github.com/cafadev/turbobus/releases/tag/v{version}',
     keywords=['command', 'bus', 'cqrs', 'commandbus', 'ddd'],
     classifiers=[ ],
     license='MIT',
