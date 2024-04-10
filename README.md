@@ -2,71 +2,80 @@
 
 TurboBus is an opinionated implementation of Command Responsibility Segregation pattern in python.
 
+## Installation
+```
+pip install turbobus
+```
+
 ## Simple usage
 Let's see an example using python typings. You can omit all the typing stuffs if you want to.
 
 **God Mode ⚡**
 ```python3
-from  dataclasses  import  dataclass
-from  typing  import  TypeAlias
+from dataclasses import dataclass
+from typing import TypeAlias
 
-from  turbobus.command  import  Command, CommandHandler, CommandBus, handler_of
-from  turbobus.injection  import  injectable
+from turbobus.command import Command, CommandHandler, handler_of
+from turbobus.bus import CommandBus
 
 LogHandlerType: TypeAlias  =  "ILogHandler"
 
 @dataclass
-class  LogCommand(Command[LogHandlerType]):
-	content: str  
+class LogCommand(Command[LogHandlerType]):
+    content: str
 
 
-class  ILogHandler(CommandHandler[LogCommand, str]):
-	...
+class ILogHandler(CommandHandler[LogCommand, str]):
+    ...
 
 
 @handler_of(LogCommand)
-class  LogHandler(ILogHandler):
-	def  execute(self, cmd: LogCommand) -> str:
-		return  cmd.content
+class LogHandler(ILogHandler):
+    def execute(self, cmd: LogCommand) -> str:
+        return cmd.content
 
 
 if __name__ == '__main__':
-	bus  =  CommandBus()
+    bus = CommandBus()
 
-	result  =  bus.execute(
-		LogCommand('Hello dude!')
-	)
-	print(result)  # Hello dude
+    result = bus.execute(
+        LogCommand('Hello dude!')
+    )
+    print(result) # Hello dude
 ```
 
 **Human Mode 🥱**
 ```python3
-from  dataclasses  import  dataclass
+from dataclasses import dataclass
+from typing import TypeAlias
 
-from  turbobus.command  import  Command, CommandHandler, handler_of
-from  turbobus.decorators  import injectable
+from turbobus.command import Command, CommandHandler, handler_of
+from turbobus.bus import CommandBus
+
+LogHandlerType: TypeAlias  =  "ILogHandler"
 
 @dataclass
-class  LogCommand(Command):
-	content
+class LogCommand(Command[LogHandlerType]):
+    content: str
 
 
-class  ILogHandler(CommandHandler):
-	...
+class ILogHandler(CommandHandler[LogCommand, str]):
+    ...
+
 
 @handler_of(LogCommand)
-class  LogHandler(ILogHandler):
-	def  execute(self, cmd: LogCommand) -> str:
-		return  cmd.content
+class LogHandler(ILogHandler):
+    def execute(self, cmd: LogCommand) -> str:
+        return cmd.content
 
 
 if __name__ == '__main__':
-	bus  =  CommandBus()
+    bus = CommandBus()
 
-	result  =  bus.execute(
-		LogCommand('Hello dude!')
-	)
-	print(result)  # Hello dude
+    result = bus.execute(
+        LogCommand('Hello dude!')
+    )
+    print(result) # Hello dude
 ```
 
 ## Dependency injection
@@ -108,3 +117,17 @@ class LogHandler(ILogHandler):
 As you can see in the example above, we're defining an abstract class with the logger method. Then we're doing the implementation of the `ILogger` and we're indicating that in the `@injectable_of(ILogger)`. 
 
 Then, using the `inject` function, TurboBus is going to map that dependency and inject the instance in the attribute.
+
+
+
+```
+from turbobus.bus import CommandBus
+
+from log.axioma import LogCommand
+
+bus = CommandBus()
+
+result = bus.execute(
+    LogCommand('Hello world')
+)
+```
