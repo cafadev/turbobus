@@ -1,15 +1,39 @@
-from dataclasses import dataclass
+from dataclasses import KW_ONLY, dataclass, make_dataclass
+from typing import Any, TypeVar, cast
+
+from turbobus.command import Command, CommandHandler, strict
 from turbobus.injection import inject
-from turbobus.command import handler_of
-from ..axioma.log import ILogHandler, ILogger, LogCommand
 
+from ..axioma.logger import ILogger
 
-@handler_of(LogCommand)
+T = TypeVar('T')
+X = TypeVar('X')
+
 @dataclass(kw_only=True)
-class LogHandler(ILogHandler):
+class LogCommand(Command[str]):
 
-    dependency = inject(ILogger)
+    content: str
 
-    def execute(self, cmd: LogCommand) -> str:
-        self.dependency.logger(cmd.content)
-        return cmd.content
+
+@dataclass(kw_only=True)
+class IntCommand(Command[int]):
+
+    content: str
+
+@inject
+@dataclass(kw_only=True)
+class LogHandler(CommandHandler[LogCommand]):
+
+    logger: ILogger
+
+    def execute(self, x: LogCommand) -> str:
+        self.logger.print(x.content)
+        return x.content
+
+@inject
+def test_dependency_injection_on_logger(logger: ILogger):
+    logger.print(': test_dependency_injection_on_logger')
+
+@inject
+def test_dependency_function_injection_on_logger(logger: ILogger):
+    logger.print(': test_dependency_function_injection_on_logger')

@@ -1,21 +1,30 @@
-from typing import TypeVar
+from typing import Any, Callable, get_type_hints
 from .constants import providers
 
+def __inject(dependency: str):
+    if not isinstance(dependency, str):
+        raise ValueError(f"Invalid dependency type {type(dependency)}")
 
-T = TypeVar('T')
+    provider = providers.get(dependency)
+
+    if provider is None:
+        raise ValueError(f"Provider for {dependency} does not exist")
+
+    return provider()
 
 
-def injectable_of(to: type):
-    def wrapper(cls):
-        providers.__setitem__(to.__name__, cls)
-        return cls
+def inject(function: Callable[..., Any] | None = None) -> Any:
+    # Check if dependency is type of function or class
+    if function is not None:
+        def wrapper(*args, **kwargs):
+            hints = get_type_hints(function)
+            injectable = { k: __inject(v.__name__) for k, v in hints.items() }
 
-    return wrapper
+            return function(*args, **kwargs, **injectable)
 
+        return wrapper
 
-def inject(cls: type[T]) -> T:
-    Provider = providers.get(cls.__name__)
+    if not isinstance(function, str):
+        raise ValueError(f"Invalid dependency type {type(function)}") 
 
-    assert Provider is not None
-
-    return Provider()
+    return __inject(function)

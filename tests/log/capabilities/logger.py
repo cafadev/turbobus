@@ -1,9 +1,7 @@
-from turbobus.injection import injectable_of
-from log.axioma.log import ILogger
+from tests.log.axioma.logger import ILogger
 
 
-@injectable_of(ILogger)
-class Logger:
+class Logger(ILogger):
 
-    def logger(self, text: str):
+    def print(self, text: str):
         print('from logger', text)

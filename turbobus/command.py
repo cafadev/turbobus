@@ -1,33 +1,70 @@
 from abc import abstractmethod, ABC
-from typing import Generic, TypeAlias, TypeVar
-from .constants import providers
+from cgitb import handler
+import inspect
+from typing import Any, Callable, Generic, TypeVar, cast
 
-CommandHandlerType: TypeAlias = 'CommandHandler'
-HandlerType = TypeVar('HandlerType', bound=CommandHandlerType, covariant=True)
+from .exception import CommandHandlerDoesNotExistException
+from turbobus.constants import providers as p
+
+
 ReturnType = TypeVar('ReturnType')
 
-class Command(ABC, Generic[HandlerType]):
+
+def strict(cls):
+    function = cls.execute
+
+    function_typing = list(function.__annotations__.values())
+
+    if len(function_typing) < 2:
+        return
     
-    __handler__: type[HandlerType]
+    cmd, returnType = function_typing
+
+    if cmd is not cls.__command__:
+        raise TypeError(f"Incompatible command type - expected {cls.__command__} but got {cmd} in {cls.__name__}")
+
+    if cmd.__return_type__ != returnType:
+        raise TypeError(f"Incompatible return type - expected {cmd.__return_type__} but got {returnType} in {cls.__name__}")
 
 
-CommandType = TypeVar('CommandType', bound=Command)
-class CommandHandler(ABC, Generic[CommandType, ReturnType]):
+class Command(Generic[ReturnType]):
+    
+    __return_type__: type[ReturnType]
 
-    def __init__(self, ) -> None:
-        super().__init__()
+    def __class_getitem__(cls, item):
+        C = type(cls.__name__, (), { '__return_type__': item })
+        return C
+
+
+class CommandHandler(ABC, Generic[ReturnType]):
+
+    __command__ = None
+
+    def __class_getitem__(cls, item):
+        C = type(cls.__name__, (cls, ), {
+            '__command__': item,
+            'execute': abstractmethod(lambda self, cmd: None)
+        })
+
+        return C
+    
+    def __init_subclass__(cls, *args, **kwargs):
+        strict(cls)
 
     @abstractmethod
-    def execute(self, cmd: CommandType) -> ReturnType:
-        ...
+    def execute(self, cmd: Command[ReturnType]) -> ReturnType:
+        """Execute method to implement the command logic"""
 
 
-def handler_of(commandClass, injectable: type | None = None):
-    def wrapper(handlerClass):
-        if injectable is not None:
-            providers.__setitem__(injectable.__name__, handlerClass)
+class CommandBus:
 
-        commandClass.__handler__ = handlerClass
-        return handlerClass
+    def execute(self, cmd: Command[ReturnType], providers: dict[Any, Any] = {}) -> ReturnType:
+        Handler = p.get(cmd.__class__.__name__)
 
-    return wrapper
+        if Handler is None:
+            raise CommandHandlerDoesNotExistException()
+
+        handler = Handler(**providers)
+
+        result = handler.execute(cmd)
+        return cast(ReturnType, result)
