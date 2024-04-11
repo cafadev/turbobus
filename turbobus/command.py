@@ -4,7 +4,7 @@ import inspect
 from typing import Any, Callable, Generic, TypeVar, cast
 
 from .exception import CommandHandlerDoesNotExistException
-from turbobus.constants import providers as p
+from turbobus.constants import Provider
 
 
 ReturnType = TypeVar('ReturnType')
@@ -20,10 +20,15 @@ def strict(cls):
     
     cmd, returnType = function_typing
 
+    try:
+        __return_type__ = cmd.__origin__.__return_type__
+    except AttributeError:
+        __return_type__ = cmd.__return_type__
+
     if cmd is not cls.__command__:
         raise TypeError(f"Incompatible command type - expected {cls.__command__} but got {cmd} in {cls.__name__}")
 
-    if cmd.__return_type__ != returnType:
+    if __return_type__ != returnType:
         raise TypeError(f"Incompatible return type - expected {cmd.__return_type__} but got {returnType} in {cls.__name__}")
 
 
@@ -59,7 +64,7 @@ class CommandHandler(ABC, Generic[ReturnType]):
 class CommandBus:
 
     def execute(self, cmd: Command[ReturnType], providers: dict[Any, Any] = {}) -> ReturnType:
-        Handler = p.get(cmd.__class__.__name__)
+        Handler = Provider.get(cmd.__class__.__name__)
 
         if Handler is None:
             raise CommandHandlerDoesNotExistException()

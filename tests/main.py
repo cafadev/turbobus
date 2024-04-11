@@ -10,7 +10,7 @@ if __name__ == '__main__':
     
     bus = CommandBus()
 
-    cmd = LogCommand(content=': LogCommand')
+    cmd = LogCommand(content=1)
 
     result = bus.execute(
         cmd

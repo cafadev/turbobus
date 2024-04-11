@@ -1,11 +1,12 @@
 from typing import Any, Callable, get_type_hints
-from .constants import providers
+from .constants import Provider
+
 
 def __inject(dependency: str):
     if not isinstance(dependency, str):
         raise ValueError(f"Invalid dependency type {type(dependency)}")
 
-    provider = providers.get(dependency)
+    provider = Provider.get(dependency)
 
     if provider is None:
         raise ValueError(f"Provider for {dependency} does not exist")
@@ -13,18 +14,41 @@ def __inject(dependency: str):
     return provider()
 
 
-def inject(function: Callable[..., Any] | None = None) -> Any:
+def inject(function: Callable[..., Any] | None = None, /, *, alias: dict[str, str] | None = None,
+           exclude: list[str] = [], only: list[str] = []) -> Any:
     # Check if dependency is type of function or class
     if function is not None:
         def wrapper(*args, **kwargs):
             hints = get_type_hints(function)
-            injectable = { k: __inject(v.__name__) for k, v in hints.items() }
+            
+            if alias:
+                hints: dict[str, Any] = { k: alias.get(k, v) for k, v in hints.items() }
+
+            injectable = { k: __inject(v.__name__ if type(v) is not str else v) for k, v in hints.items() }
 
             return function(*args, **kwargs, **injectable)
 
         return wrapper
+    
+    def decorator(function: Callable[..., Any]) -> Any:
+        def wrapper(*args, **kwargs):
+            hints = get_type_hints(function)
 
-    if not isinstance(function, str):
-        raise ValueError(f"Invalid dependency type {type(function)}") 
+            # exclude keys from hints using exclude list parameter
+            if exclude:
+                hints = { k: v for k, v in hints.items() if k not in exclude }
 
-    return __inject(function)
+            # only keys from hints using only list parameter
+            if only:
+                hints = { k: v for k, v in hints.items() if k in only }
+            
+            if alias is not None:
+                hints: dict[str, Any] = { k: alias.get(k, v) for k, v in hints.items() }
+
+            injectable = { k: __inject(v.__name__ if type(v) is not str else v) for k, v in hints.items() }
+
+            return function(*args, **kwargs, **injectable)
+
+        return wrapper
+    
+    return decorator
