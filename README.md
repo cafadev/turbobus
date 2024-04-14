@@ -193,3 +193,32 @@ if __name__ == '__main__':
     )
 
 ```
+@inject(alias={ 'logger': 'ILogger' }, only=['logger'], exclude=['x'])
+The `@inject` decorator also accepts the next parameters:
+
+### Alias
+
+The `@inject` decorator use the typing to resolve the required dependency. With the `alias: dict[str, Callable[..., Any]]` parameter you can specify a different implementation for the same interface. For example, let's say we have a UserRepository interface and then two different implementations; UserRepositoryInMemory and UserRepositorySQL.
+
+```python3
+Provider.set(UserRepository, UserRepositoryInMemory)
+Provider.set('UserRepositorySQL', UserRepositorySQL)
+
+@inject
+class CreateUserAccount:
+
+    user: UserRepository
+```
+
+By default, the `@inject` will use the `UserRepositoryInMemory` to provide the dependency. Let's specify the `UserRepositorySQL` as the provider. To accomplish that we just need to specify the parameter name that we want to override, and then the Provider Key:
+
+
+```python3
+Provider.set(UserRepository, UserRepositoryInMemory)
+Provider.set(UserRepositorySQL, UserRepositorySQL)
+
+@inject(alias = { 'user': 'UserRepositorySQL' })
+class CreateUserAccount:
+
+    user: UserRepository
+```
