@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "turbobus"
 version = "1.0.0-alpha.0"
-description = "TurboBus is an opinionated implementation of Command Responsibility Segregation pattern in python"
+description = "TurboBus is an implementation of Command Responsibility Segregation pattern in python"
 authors = ["Christopher A. Flores <christopher.flores@codexitos.com>"]
 license = "MIT"
 readme = "README.md"

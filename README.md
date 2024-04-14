@@ -1,9 +1,9 @@
 # TurboBus
 
-TurboBus is an opinionated implementation of Command Responsibility Segregation pattern in python.
+TurboBus is a package to create software following the Command Responsibility Segregation pattern in python.
 
 ## Installation
-```
+```bash
 pip install turbobus
 ```
 
@@ -12,122 +12,184 @@ Let's see an example using python typings. You can omit all the typing stuffs if
 
 **God Mode ⚡**
 ```python3
-from dataclasses import dataclass
-from typing import TypeAlias
+from datetime import date
+from turbobus.command import Command, CommandBus, CommandHandler, kw_only_frozen
+from turbobus.constants import Provider
 
-from turbobus.command import Command, CommandHandler, handler_of
-from turbobus.bus import CommandBus
+# We need to create a Command class that receives the values that the handler will use
+# to execute the command. The Command class is a generic class that receives the return
 
-LogHandlerType: TypeAlias  =  "ILogHandler"
+# @kw_only_frozen: is a shortcut decorator for @dataclass(kw_only=True, frozen=True)
 
-@dataclass
-class LogCommand(Command[LogHandlerType]):
-    content: str
+# Command[int]: is a generic class that receives a return_type.
+# This is useful to check if the handler is returning the correct type
+# And allow the CommandBus to know the return type of the command
+
+@kw_only_frozen 
+class CalculateAgeCommand(Command[int]):
+    birthdate: str | date
 
 
-class ILogHandler(CommandHandler[LogCommand, str]):
-    ...
+# We need to create a CommandHandler class that will receive the Command class.
+# The handler class must implement the execute method
+    
+# CommandHandler[CalculateAgeCommand]: is a generic class that receives the Command class
+# this is useful to check if the handler is implementing the correct command class
+class CalculateAgeHandler(CommandHandler[CalculateAgeCommand]):
+
+    # The execute method must receive the Command class and return
+    # the same type as in the Command class return_type
+    def execute(self, cmd: CalculateAgeCommand) -> int:
+        birthdate: date = cmd.birthdate if isinstance(cmd.birthdate, date) else date.fromisoformat(cmd.birthdate)
+
+        today = date.today()
+        age = today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
+        return age
 
 
-@handler_of(LogCommand)
-class LogHandler(ILogHandler):
-    def execute(self, cmd: LogCommand) -> str:
-        return cmd.content
+# We need to register the Command and Handler in the Provider
+# This is necessary to allow the CommandBus to find the correct handler
+# to execute the command
+Provider.set(CalculateAgeCommand, CalculateAgeHandler)
 
 
 if __name__ == '__main__':
+    # We need to create a CommandBus instance to execute the command
     bus = CommandBus()
 
+    # Here we are executing the CalculateAgeCommand
+    # if you're using an IDE that supports type hinting
+    # you'll see that the result variable is inferred as int
+    # because the CalculateAgeCommand is a generic class
+    # that receives int as return_type
     result = bus.execute(
-        LogCommand('Hello dude!')
+        CalculateAgeCommand(birthdate='1994-03-09')
     )
-    print(result) # Hello dude
+
+    print(f'You are {result} years old')
+
 ```
 
-**Human Mode 🥱**
+**Human Mode (No types, obviously 🙄)**
+
+Here's the same example, but without types
 ```python3
-from dataclasses import dataclass
-from typing import TypeAlias
-
-from turbobus.command import Command, CommandHandler, handler_of
-from turbobus.bus import CommandBus
-
-LogHandlerType: TypeAlias  =  "ILogHandler"
-
-@dataclass
-class LogCommand(Command[LogHandlerType]):
-    content: str
+from datetime import date
+from turbobus.command import Command, CommandBus, CommandHandler, kw_only_frozen
+from turbobus.constants import Provider
 
 
-class ILogHandler(CommandHandler[LogCommand, str]):
-    ...
+class CalculateAgeCommand(Command):
+
+    def __init__(self, birthdate):
+        self.birthdate = birthdate
 
 
-@handler_of(LogCommand)
-class LogHandler(ILogHandler):
-    def execute(self, cmd: LogCommand) -> str:
-        return cmd.content
+class CalculateAgeHandler(CommandHandler):
 
+    def execute(self, cmd: CalculateAgeCommand):
+        birthdate = cmd.birthdate if isinstance(cmd.birthdate, date) else date.fromisoformat(cmd.birthdate)
+
+        today = date.today()
+        age = today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
+        return age
+
+Provider.set(CalculateAgeCommand, CalculateAgeHandler)
 
 if __name__ == '__main__':
     bus = CommandBus()
 
     result = bus.execute(
-        LogCommand('Hello dude!')
+        CalculateAgeCommand(birthdate='1994-03-09')
     )
-    print(result) # Hello dude
+
+    print(f'You are {result} years old')
+
 ```
 
 ## Dependency injection
-In many cases we're going to need to inject dependencies to our command handler. To accomplish that we have two important tools: `@injectable_of` decorator and `inject` function. 
-
-With the `@injectable_of` decorator we can specify a class that is implementing the functionalities of the dependency. For example:
+In many cases we're going to need to inject dependencies to our command handler. To accomplish that we have the `@inject` decorator. For example:
 
 ```python3
-from turbobus.injection import injectable_of, inject
-from log.axioma.log import ILogger
+from abc import ABC, abstractmethod
+from dataclasses import field
+import uuid
+from turbobus.command import Command, CommandBus, CommandHandler, kw_only_frozen
+from turbobus.constants import Provider
+from turbobus.injection import inject
 
 
-class ILogger(ABC):
+# This is a simple Entity to represent a User
+@kw_only_frozen
+class UserEntity:
+    id: uuid.UUID = field(default_factory=uuid.uuid4)
+    name: str
+    email: str
+
+
+# We need to define the repository interface
+# to save and retrieve users
+class UserRepository(ABC):
 
     @abstractmethod
-    def logger(self, text: str) -> None:
-        ...
+    def get_by_id(self, id: uuid.UUID) -> UserEntity | None:
+        """Get user by id"""
+
+    @abstractmethod
+    def save(self, user: UserEntity) -> None:
+        """Save user"""
 
 
-@injectable_of(ILogger)
-class Logger:
+# This is an in-memory implementation of the UserRepository
+class UserRepositoryInMemory(UserRepository):
 
-    def logger(self, text: str) -> None:
-        print(text)
+    def __init__(self):
+        self._users: dict[uuid.UUID, UserEntity] = {}
 
-
-@command(LogCommand)
-@dataclass(kw_only=True)
-class LogHandler(ILogHandler):
-
-    logger = inject(ILogger)
-
-    def execute(self, cmd: LogCommand) -> str:
-		self.logger.logger(cmd.content)
-        return cmd.content
-
-```
-
-As you can see in the example above, we're defining an abstract class with the logger method. Then we're doing the implementation of the `ILogger` and we're indicating that in the `@injectable_of(ILogger)`. 
-
-Then, using the `inject` function, TurboBus is going to map that dependency and inject the instance in the attribute.
+    def get_by_id(self, id: uuid.UUID) -> UserEntity | None:
+        return self._users.get(id)
+    
+    def save(self, user: UserEntity) -> None:
+        self._users[user.id] = user
 
 
+# Let's create a command to create a user account
+@kw_only_frozen
+class CreateUserAccount(Command[None]):
+    name: str
+    email: str
 
-```
-from turbobus.bus import CommandBus
 
-from log.axioma import LogCommand
+#  @inject is used to inject the dependencies
+@inject
+@kw_only_frozen
+class CreateUserAccountHandler(CommandHandler[CreateUserAccount]):
 
-bus = CommandBus()
+    user_repository: UserRepository
 
-result = bus.execute(
-    LogCommand('Hello world')
-)
+    def execute(self, cmd: CreateUserAccount) -> None:
+        user = UserEntity(name=cmd.name, email=cmd.email)
+
+        # It's unnecessary to retrieve the user from the repository
+        # this is just to demonstrate that the user was saved
+        self.user_repository.save(user)
+        user = self.user_repository.get_by_id(user.id)
+
+        if user is None:
+            raise Exception('User not found')
+        
+        print(f'Welcome {user.name}!')
+
+
+Provider.set(UserRepository, UserRepositoryInMemory)
+Provider.set(CreateUserAccount, CreateUserAccountHandler)
+
+
+if __name__ == '__main__':
+    bus = CommandBus()
+
+    bus.execute(
+        CreateUserAccount(name='Christopher Flores', email='cafadev@outlook.com')
+    )
+
 ```
