@@ -1,7 +1,8 @@
-from dataclasses import KW_ONLY, dataclass, make_dataclass
-from typing import Any, Generic, TypeVar
+from dataclasses import dataclass
 
-from turbobus.command import Command, CommandHandler, strict
+from typing import TypeVar
+from turbobus import command
+from turbobus.command import Command, CommandHandler
 from turbobus.injection import inject
 
 from ..axioma.logger import ILogger
@@ -9,27 +10,26 @@ from ..axioma.logger import ILogger
 T = TypeVar('T')
 X = TypeVar('X')
 
-@dataclass(kw_only=True)
-class LogCommand(Command[T], Generic[T]):
+@command
+class LogCommand(Command[str]):
 
-    content: T
-
+    content: str
 
 @dataclass(kw_only=True)
 class IntCommand(Command[str]):
 
     content: str
 
-@inject(alias={ 'logger': 'ILogger2' })
+@inject
 @dataclass(kw_only=True)
-class LogHandler(CommandHandler[LogCommand[T]]):
+class LogHandler(CommandHandler[LogCommand]):
 # class LogHandler(CommandHandler[IntCommand]):
 
     logger: ILogger
 
-    def execute(self, x: LogCommand[T]) -> T:
-    # def execute(self, x: IntCommand) -> str:
-        # self.logger.print(x.content)
+    # def execute(self, x: LogCommand[T]) -> T:
+    def execute(self, x: LogCommand) -> str:
+        self.logger.print(x.content)
         return x.content
 
 @inject(alias={ 'logger': 'ILogger' }, only=['logger'], exclude=['x'])
