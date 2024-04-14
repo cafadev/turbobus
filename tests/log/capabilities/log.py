@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from typing import TypeVar
-from turbobus import command
+from turbobus import kw_only_frozen
 from turbobus.command import Command, CommandHandler
 from turbobus.injection import inject
 
@@ -10,7 +10,7 @@ from ..axioma.logger import ILogger
 T = TypeVar('T')
 X = TypeVar('X')
 
-@command
+@kw_only_frozen
 class LogCommand(Command[str]):
 
     content: str
