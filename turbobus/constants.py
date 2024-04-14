@@ -3,12 +3,17 @@ from typing import Any
 
 class Provider:
 
-    providers: dict[str, Any] = {}
+    _providers: dict[str, Any] = {}
 
     @classmethod
-    def set(cls, key: str, value: Any):
-        cls.providers[key] = value
+    def set(cls, key: type | str, value: Any):
+        provider_name = key if isinstance(key, str) else key.__name__
+        cls._providers[provider_name] = value
 
     @classmethod
-    def get(cls, key: str) -> Any:
-        return cls.providers.get(key)
+    def get(cls, key: type | str) -> Any:
+        return cls._providers.get(key if isinstance(key, str) else key.__name__)
+    
+    @classmethod
+    def clear(cls):
+        cls._providers = {}
