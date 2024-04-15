@@ -193,7 +193,6 @@ if __name__ == '__main__':
     )
 
 ```
-@inject(alias={ 'logger': 'ILogger' }, only=['logger'], exclude=['x'])
 The `@inject` decorator also accepts the next parameters:
 
 ### Alias
@@ -217,8 +216,36 @@ By default, the `@inject` will use the `UserRepositoryInMemory` to provide the d
 Provider.set(UserRepository, UserRepositoryInMemory)
 Provider.set(UserRepositorySQL, UserRepositorySQL)
 
-@inject(alias = { 'user': 'UserRepositorySQL' })
+@inject(alias={ 'user': 'UserRepositorySQL' })
 class CreateUserAccount:
 
     user: UserRepository
 ```
+
+### Only and Exclude
+The `only` and `exclude` parameters in the `@inject` decorator allow you to fine-tune which dependencies should be resolved based on their names.
+
+The `only` parameter specifies a list of dependency names that should exclusively be resolved. All other dependencies will be ignored.
+
+```python3
+@inject(only=['dependency1', 'dependency2'])
+def my_function(dep1: Dependency1, dep2: Dependency2, dep3: Dependency3):
+    # Only dep1 and dep2 will be injected
+    pass
+```
+
+In this example, only dep1 and dep2 will be injected into the function because they are specified in the only list.
+
+The `exclude` parameter specifies a list of dependency names that should be excluded from injection.
+
+```python3
+@inject(exclude=['dependency3'])
+def my_function(dep1: Dependency1, dep2: Dependency2, dep3: Dependency3):
+    # Dep3 will not be injected
+    pass
+
+```
+
+In this example, dep3 will not be injected into the function because it is specified in the exclude list.
+
+These parameters provide flexibility in controlling which dependencies are resolved, allowing you to customize the injection behavior according to your specific needs.
