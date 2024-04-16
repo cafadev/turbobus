@@ -1,0 +1,110 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+
+  build:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    outputs:
+      fromTag: ${{ steps.fromTag.outputs.tag }}
+      toTag: ${{ steps.toTag.outputs.tag }}
+    steps:
+      - name: checkout code repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+
+      - name: 'Get Previous tag'
+        id: fromTag
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
+
+      - name: Installing python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Installing poetry
+        uses: abatilo/actions-poetry@v2
+        with:
+          poetry-version: '1.6.1'
+
+      - name: Install deps
+        run: poetry install
+
+      - name: Run matic-release
+        run: poetry run python scripts/release.py --ci
+
+      - name: Build a binary wheel and a source tarball
+        run: poetry run python setup.py sdist
+
+      - name: Store the distribution packages
+        uses: actions/upload-artifact@v3
+        with:
+          name: python-package-distributions
+          path: dist/
+
+      - name: Publish tag
+        run: git push --tags
+
+      - name: 'Get lastest tag'
+        id: toTag
+        uses: "WyriHaximus/github-action-get-previous-tag@v1"
+
+  pypi-publish:
+    if: ${{ needs.build.outputs.fromTag != needs.build.outputs.toTag }}
+    name: Upload release to PyPI
+    runs-on: ubuntu-latest
+    needs:
+      - build
+    environment:
+      name: pypi
+      url: https://pypi.org/p/turbobus
+    permissions:
+      id-token: write
+    steps:
+      - name: Download all the dists
+        uses: actions/download-artifact@v3
+        with:
+          name: python-package-distributions
+          path: dist/
+
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+  generate-release:
+    if: ${{ needs.build.outputs.fromTag != needs.build.outputs.toTag }}
+    runs-on: ubuntu-latest
+    needs:
+      - build
+      - pypi-publish
+    steps:
+      - name: checkout code repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up git-cliff
+        uses: kenji-miyake/setup-git-cliff@v1
+
+      - name: Run git-cliff
+        run: |
+          {
+            echo 'CHANGELOG<<EOF'
+            git cliff --latest
+            echo EOF
+          } >> "$GITHUB_ENV"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body: ${{ env.CHANGELOG }}
+          tag_name: ${{ needs.build.outputs.toTag }}
