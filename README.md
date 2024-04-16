@@ -1,6 +1,6 @@
 # TurboBus
 
-TurboBus is a package to create software following the Command Responsibility Segregation pattern in python.
+TurboBus is a powerful Python package designed to streamline the development of software applications adhering to the Command Responsibility Segregation (CRS) pattern.
 
 ## Installation
 ```bash

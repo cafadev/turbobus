@@ -20,7 +20,7 @@ setup(
     name='turbobus',
     packages=['turbobus'],
     version=version,
-    description='TurboBus is an opinionated implementation of Command Responsibility Segregation pattern in python.',
+    description='TurboBus is a powerful Python package designed to streamline the development of software applications adhering to the Command Responsibility Segregation (CRS) pattern.',
     long_description=readme.read(),
     long_description_content_type='text/markdown',
     author='Christopher A. Flores',
@@ -28,7 +28,7 @@ setup(
 
     url='https://github.com/cafadev/turbobus',
     download_url=f'https://github.com/cafadev/turbobus/releases/tag/v{version}',
-    keywords=['command', 'bus', 'cqrs', 'commandbus', 'ddd'],
+    keywords=['command', 'bus', 'cqrs', 'crs', 'injection', 'ddd', 'domain', 'driven', 'design', 'pattern', 'python', 'turbobus'],
     classifiers=[ ],
     license='MIT',
     include_package_data=True
